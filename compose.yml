@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      MYSQL_HOST: db
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
+    volumes:
+      - type: bind
+        source: ./service
+        target: /service
+      - public-data:/service/public   # ← nginx と共有する public フォルダ
+    depends_on:
+      - db
+
+# ステップ2で追記、MySQLのイメージを使用
+  db:
+    image: mysql:8.3
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - '3306:3306'
+    volumes:
+      - type: bind
+        source: ./db_data
+        target: /var/lib/mysql
+
+  nginx:
+    container_name: rails-nginx
+    # ここで「既に作った nginx イメージ」を指定
+    image: nginx  # ←ここにあなたが以前作った nginx イメージ名を書く
+    ports:
+      - '54010:80'
+    depends_on:
+      - web
+    volumes:
+      - public-data:/app/public   # ← RailsのpublicをNginxで共有して静的ファイルを配信
+
+volumes:
+  public-data:
